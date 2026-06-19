@@ -1,5 +1,7 @@
 """Data validation and cleaning for UAC pipeline data."""
 
+from datetime import datetime
+
 import pandas as pd
 
 from .data_loader import load_raw_data, standardize_columns
@@ -13,6 +15,29 @@ def _parse_numeric(series: pd.Series) -> pd.Series:
             errors="coerce",
         )
     return pd.to_numeric(series, errors="coerce")
+
+
+def _parse_date_value(value) -> pd.Timestamp:
+    """Parse dates consistently across pandas/runtime versions."""
+    if pd.isna(value):
+        return pd.NaT
+
+    text = str(value).strip()
+    if not text or text.lower() in {"nan", "nat", "none"}:
+        return pd.NaT
+
+    for fmt in ("%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%m/%d/%Y", "%d-%m-%Y"):
+        try:
+            return pd.Timestamp(datetime.strptime(text, fmt))
+        except ValueError:
+            continue
+
+    return pd.to_datetime(text, errors="coerce")
+
+
+def _parse_dates(series: pd.Series) -> pd.Series:
+    """Convert source date strings to pandas timestamps."""
+    return series.map(_parse_date_value)
 
 
 def validate_data(df: pd.DataFrame) -> dict:
@@ -38,7 +63,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         if col in cleaned.columns:
             cleaned[col] = _parse_numeric(cleaned[col])
 
-    cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce", format="mixed")
+    cleaned["date"] = _parse_dates(cleaned["date"])
     cleaned = cleaned.dropna(subset=["date"])
     cleaned = cleaned.drop_duplicates(subset=["date"], keep="last")
     cleaned = cleaned.sort_values("date").reset_index(drop=True)
