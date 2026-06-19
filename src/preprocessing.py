@@ -1,10 +1,38 @@
 """Data validation and cleaning for UAC pipeline data."""
 
 from datetime import datetime
+import re
 
 import pandas as pd
 
 from .data_loader import load_raw_data, standardize_columns
+
+MONTH_LOOKUP = {
+    "jan": 1,
+    "january": 1,
+    "feb": 2,
+    "february": 2,
+    "mar": 3,
+    "march": 3,
+    "apr": 4,
+    "april": 4,
+    "may": 5,
+    "jun": 6,
+    "june": 6,
+    "jul": 7,
+    "july": 7,
+    "aug": 8,
+    "august": 8,
+    "sep": 9,
+    "sept": 9,
+    "september": 9,
+    "oct": 10,
+    "october": 10,
+    "nov": 11,
+    "november": 11,
+    "dec": 12,
+    "december": 12,
+}
 
 
 def _parse_numeric(series: pd.Series) -> pd.Series:
@@ -22,9 +50,16 @@ def _parse_date_value(value) -> pd.Timestamp:
     if pd.isna(value):
         return pd.NaT
 
-    text = str(value).strip()
+    text = str(value).replace("\ufeff", "").strip().strip('"').strip("'")
     if not text or text.lower() in {"nan", "nat", "none"}:
         return pd.NaT
+
+    month_match = re.fullmatch(r"([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})", text)
+    if month_match:
+        month_name, day, year = month_match.groups()
+        month = MONTH_LOOKUP.get(month_name.lower())
+        if month:
+            return pd.Timestamp(year=int(year), month=month, day=int(day))
 
     for fmt in ("%B %d, %Y", "%b %d, %Y", "%Y-%m-%d", "%m/%d/%Y", "%d-%m-%Y"):
         try:
@@ -56,6 +91,7 @@ def validate_data(df: pd.DataFrame) -> dict:
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
     """Clean and sort UAC operational data."""
     cleaned = df.copy()
+    cleaned.columns = [str(col).replace("\ufeff", "").strip() for col in cleaned.columns]
     cleaned = cleaned.rename(columns={"Date": "date"})
 
     numeric_cols = ["apprehensions", "cbp_custody", "transfers", "hhs_care", "discharges"]
