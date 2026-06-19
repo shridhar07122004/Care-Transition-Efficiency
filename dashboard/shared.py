@@ -3,6 +3,7 @@
 import sys
 from pathlib import Path
 
+import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
@@ -380,8 +381,13 @@ def render_recommendation_cards(recommendations: list[dict]):
 
 def render_sidebar_controls(base_df) -> dict:
     st.sidebar.markdown("### ◆ Data Filters")
-    min_date = base_df["date"].min().date()
-    max_date = base_df["date"].max().date()
+    valid_dates = base_df["date"].dropna()
+    if valid_dates.empty:
+        st.error("No valid dates were found in data/uac_data.csv. Check the Date column and redeploy.")
+        st.stop()
+
+    min_date = pd.Timestamp(valid_dates.min()).date()
+    max_date = pd.Timestamp(valid_dates.max()).date()
     date_range = st.sidebar.date_input(
         "Date Range", value=(min_date, max_date),
         min_value=min_date, max_value=max_date,

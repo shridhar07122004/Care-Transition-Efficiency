@@ -1,9 +1,16 @@
 """Bottleneck detection and alerts page."""
 
+import sys
+from pathlib import Path
+
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
+APP_DIR = Path(__file__).resolve().parent.parent
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 
 from shared import METRIC_CATALOG, apply_theme, get_dashboard_context, render_page_header, render_section, themed_plotly_layout
 

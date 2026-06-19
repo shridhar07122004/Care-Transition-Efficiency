@@ -38,7 +38,7 @@ def clean_data(df: pd.DataFrame) -> pd.DataFrame:
         if col in cleaned.columns:
             cleaned[col] = _parse_numeric(cleaned[col])
 
-    cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce")
+    cleaned["date"] = pd.to_datetime(cleaned["date"], errors="coerce", format="mixed")
     cleaned = cleaned.dropna(subset=["date"])
     cleaned = cleaned.drop_duplicates(subset=["date"], keep="last")
     cleaned = cleaned.sort_values("date").reset_index(drop=True)

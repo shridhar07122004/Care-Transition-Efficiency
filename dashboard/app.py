@@ -1,7 +1,14 @@
 """Care Transition Analytics — Executive Overview."""
 
+import sys
+from pathlib import Path
+
 import plotly.graph_objects as go
 import streamlit as st
+
+APP_DIR = Path(__file__).resolve().parent
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
 
 from shared import (
     METRIC_CATALOG,
