@@ -307,8 +307,8 @@ CHART_COLORS = {
 }
 
 
-@st.cache_data(show_spinner=False)
 def get_base_data():
+    load_base_data.cache_clear()
     return load_base_data()
 
 
